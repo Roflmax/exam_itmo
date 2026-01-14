@@ -1,99 +1,113 @@
-"""Step definitions для функционала добавления упражнений в дневник тренировок."""
-
+"""Step definitions для функционала добавления упражнений."""
 import pytest
 from pytest_bdd import scenarios, given, when, then, parsers
+from datetime import datetime
 
-# Загрузка сценариев из feature файла
+from gym.models import Exercise
+from gym.parser import parse_exercise_input
+
 scenarios('../features/add_exercise.feature')
 
 
-# === Предыстория (Background) ===
-
 @given('пользователь авторизован в системе')
-def user_authorized():
-    """Пользователь авторизован в системе."""
-    pytest.skip("Реализация будет добавлена позже")
+def user_authorized(exercise_context):
+    """Пользователь авторизован."""
+    exercise_context['authorized'] = True
 
 
 @given('существует дневник тренировок')
-def workout_diary_exists():
-    """Существует дневник тренировок."""
-    pytest.skip("Реализация будет добавлена позже")
+def workout_diary_exists(temp_db, exercise_context):
+    """База данных инициализирована."""
+    exercise_context['db'] = temp_db
 
-
-# === Шаги для сценария: Добавление упражнения с весом и повторениями ===
 
 @when(parsers.parse('пользователь добавляет упражнение "{exercise_name}"'))
-def user_adds_exercise(exercise_name: str):
-    """Пользователь добавляет упражнение с заданным названием."""
-    pytest.skip("Реализация будет добавлена позже")
+def user_adds_exercise(exercise_context, exercise_name):
+    """Пользователь добавляет упражнение."""
+    exercise_context['name'] = exercise_name
 
 
 @when(parsers.parse('указывает вес {weight:d} кг'))
-def set_weight(weight: int):
-    """Указывает вес в килограммах."""
-    pytest.skip("Реализация будет добавлена позже")
+def set_weight(exercise_context, weight):
+    """Указывает вес."""
+    exercise_context['weight'] = float(weight)
 
 
 @when(parsers.parse('указывает количество повторений {reps:d}'))
-def set_reps(reps: int):
-    """Указывает количество повторений."""
-    pytest.skip("Реализация будет добавлена позже")
+def set_reps(exercise_context, reps):
+    """Указывает повторения."""
+    exercise_context['reps'] = reps
 
 
 @when(parsers.parse('указывает количество подходов {sets:d}'))
-def set_sets(sets: int):
-    """Указывает количество подходов."""
-    pytest.skip("Реализация будет добавлена позже")
+def set_sets(exercise_context, sets):
+    """Указывает подходы."""
+    exercise_context['sets'] = sets
+
+
+@when(parsers.parse('добавляет заметку "{note}"'))
+def add_note(exercise_context, note):
+    """Добавляет заметку."""
+    exercise_context['note'] = note
 
 
 @then('упражнение должно быть сохранено в дневнике')
-def exercise_saved_in_diary():
-    """Упражнение должно быть сохранено в дневнике."""
-    pytest.skip("Реализация будет добавлена позже")
+def exercise_saved_in_diary(temp_db, exercise_context):
+    """Сохраняем и проверяем упражнение."""
+    exercise = Exercise(
+        id=None,
+        name=exercise_context['name'],
+        weight=exercise_context['weight'],
+        reps=exercise_context['reps'],
+        sets=exercise_context['sets'],
+        note=exercise_context.get('note'),
+        created_at=datetime.now()
+    )
+    exercise_id = temp_db.add_exercise(exercise)
+    exercise_context['exercise'] = exercise
+    assert exercise_id is not None
 
 
 @then(parsers.parse('общий объём нагрузки должен быть {total_volume:d} кг'))
-def check_total_volume(total_volume: int):
-    """Проверяет общий объём нагрузки (вес * повторения * подходы)."""
-    pytest.skip("Реализация будет добавлена позже")
-
-
-# === Шаги для сценария: Добавление упражнения с заметкой ===
-
-@when(parsers.parse('добавляет заметку "{note}"'))
-def add_note(note: str):
-    """Добавляет заметку к упражнению."""
-    pytest.skip("Реализация будет добавлена позже")
+def check_total_volume(exercise_context, total_volume):
+    """Проверяем объём."""
+    exercise = exercise_context['exercise']
+    assert exercise.total_volume == total_volume
 
 
 @then('заметка должна быть прикреплена к упражнению')
-def note_attached_to_exercise():
-    """Заметка должна быть прикреплена к упражнению."""
-    pytest.skip("Реализация будет добавлена позже")
+def note_attached_to_exercise(exercise_context):
+    """Проверяем заметку."""
+    assert exercise_context['note'] is not None
+    assert exercise_context['exercise'].note == exercise_context['note']
 
-
-# === Шаги для структуры сценария: Парсинг разных форматов ввода ===
 
 @when(parsers.parse('пользователь вводит упражнение "{exercise_name}" в формате "{input_format}"'))
-def user_inputs_exercise_with_format(exercise_name: str, input_format: str):
-    """Пользователь вводит упражнение в определённом формате."""
-    pytest.skip("Реализация будет добавлена позже")
+def user_inputs_exercise_with_format(exercise_context, exercise_name, input_format):
+    """Парсим формат ввода."""
+    exercise_context['name'] = exercise_name
+    try:
+        weight, reps, sets = parse_exercise_input(input_format)
+        exercise_context['weight'] = weight
+        exercise_context['reps'] = reps
+        exercise_context['sets'] = sets
+    except ValueError as e:
+        exercise_context['error'] = str(e)
 
 
 @then(parsers.parse('система должна распознать вес {weight:d} кг'))
-def system_recognizes_weight(weight: int):
-    """Система должна корректно распознать вес."""
-    pytest.skip("Реализация будет добавлена позже")
+def system_recognizes_weight(exercise_context, weight):
+    """Проверяем вес."""
+    assert exercise_context['weight'] == weight
 
 
 @then(parsers.parse('система должна распознать повторения {reps:d}'))
-def system_recognizes_reps(reps: int):
-    """Система должна корректно распознать количество повторений."""
-    pytest.skip("Реализация будет добавлена позже")
+def system_recognizes_reps(exercise_context, reps):
+    """Проверяем повторения."""
+    assert exercise_context['reps'] == reps
 
 
 @then(parsers.parse('система должна распознать подходы {sets:d}'))
-def system_recognizes_sets(sets: int):
-    """Система должна корректно распознать количество подходов."""
-    pytest.skip("Реализация будет добавлена позже")
+def system_recognizes_sets(exercise_context, sets):
+    """Проверяем подходы."""
+    assert exercise_context['sets'] == sets
