@@ -14,6 +14,11 @@ from typing import Iterator, List, Optional, Tuple
 from .models import Exercise
 
 
+def normalize_exercise_name(name: str) -> str:
+    """Нормализация названия упражнения: ё→е, lowercase, strip."""
+    return name.lower().replace('ё', 'е').strip()
+
+
 class Database:
     """
     Класс для работы с SQLite базой данных упражнений.
@@ -238,16 +243,17 @@ class Database:
             ...     weight, date = result
             ...     print(f"Рекорд: {weight}кг ({date.strftime('%d.%m.%Y')})")
         """
+        normalized_name = normalize_exercise_name(exercise_name)
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 SELECT weight, created_at
                 FROM exercises
-                WHERE LOWER(name) = LOWER(?)
+                WHERE LOWER(REPLACE(name, 'ё', 'е')) = ?
                 ORDER BY weight DESC, created_at ASC
                 LIMIT 1
                 """,
-                (exercise_name.strip(),)
+                (normalized_name,)
             )
             row = cursor.fetchone()
 
@@ -278,16 +284,17 @@ class Database:
             >>> if last:
             ...     print(f"Последний раз: {last.weight}кг x {last.reps}")
         """
+        normalized_name = normalize_exercise_name(exercise_name)
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 SELECT id, name, weight, reps, sets, note, created_at
                 FROM exercises
-                WHERE LOWER(name) = LOWER(?)
+                WHERE LOWER(REPLACE(name, 'ё', 'е')) = ?
                 ORDER BY created_at DESC
                 LIMIT 1
                 """,
-                (exercise_name.strip(),)
+                (normalized_name,)
             )
             row = cursor.fetchone()
 
