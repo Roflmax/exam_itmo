@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Environment
+.env
+venv/
+.venv/
+
+# Database
+*.db
+
+# Temp files
+*.ogg
+*.wav
+*.tmp

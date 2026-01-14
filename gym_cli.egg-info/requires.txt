@@ -1,9 +1,0 @@
-click>=8.0
-aiogram>=3.0
-openai>=1.0
-pydub>=0.25
-
-[dev]
-pytest>=7.0
-pytest-bdd>=6.0
-pytest-asyncio>=0.21
