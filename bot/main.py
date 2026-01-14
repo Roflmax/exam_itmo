@@ -11,7 +11,7 @@ import sys
 
 from aiogram import Bot, Dispatcher
 
-from handlers import router
+from .handlers import router
 
 # Configure logging
 logging.basicConfig(

@@ -1,0 +1,2 @@
+[console_scripts]
+gym = gym.cli:main
