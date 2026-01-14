@@ -17,7 +17,8 @@ from gym.db import Database
 from gym.models import Exercise
 from gym.parser import parse_exercise_input, parse_voice_numbers
 
-from .voice import transcribe_voice, parse_voice_command
+from .voice import transcribe_voice
+from .llm_parser import parse_voice_with_llm, execute_cli_command
 
 # Initialize router
 router = Router()
@@ -360,39 +361,43 @@ async def handle_text_message(message: Message) -> None:
 @router.message(F.voice)
 async def handle_voice_message(message: Message) -> None:
     """
-    Handle voice messages - transcribe and execute commands.
+    Handle voice messages using LLM-based parsing.
 
-    Supports voice commands like:
+    Flow:
+    1. Whisper API transcribes voice to text
+    2. LLM (GPT-4o-mini) parses text to CLI command
+    3. subprocess executes CLI command
+    4. Result sent to user
+
+    Supports any natural language formulation:
     - "добавь жим лёжа восемьдесят кило восемь на три"
-    - "что я сегодня делал"
-    - "какой у меня максимум на жиме"
-    - "когда последний раз делал становую"
+    - "запиши что я сделал присед сто двадцать на пять"
+    - "что я сегодня натренировал"
+    - "какой у меня рекорд в становой"
     """
     if not message.voice or not message.bot:
         return
 
-    # Download voice file
     try:
+        # Step 1: Download voice file
         file = await message.bot.get_file(message.voice.file_id)
         if not file.file_path:
             await message.answer("Не удалось получить голосовое сообщение")
             return
 
-        # Create temp file path
         import tempfile
+        import os
 
         with tempfile.NamedTemporaryFile(suffix=".ogg", delete=False) as tmp:
             tmp_path = tmp.name
 
-        # Download file
         await message.bot.download_file(file.file_path, tmp_path)
 
-        # Transcribe voice
+        # Step 2: Transcribe voice with Whisper
         await message.answer("Распознаю голос...")
         text = await transcribe_voice(tmp_path)
 
         # Clean up temp file
-        import os
         os.unlink(tmp_path)
 
         if not text:
@@ -401,90 +406,28 @@ async def handle_voice_message(message: Message) -> None:
 
         await message.answer(f"Распознано: {text}")
 
-        # Parse command
-        parsed = parse_voice_command(text)
-        command = parsed.get("command", "unknown")
+        # Step 3: Parse with LLM
+        parsed = await parse_voice_with_llm(text)
 
-        db = get_db()
+        # Check for error from LLM
+        if parsed.get("error"):
+            await message.answer(parsed["error"])
+            return
 
-        if command == "add":
-            exercise_name = parsed.get("exercise_name", "")
-            params = parsed.get("params", "")
+        command = parsed.get("command")
+        if not command:
+            await message.answer("Не удалось распознать команду. Попробуйте иначе.")
+            return
 
-            if not exercise_name or not params:
-                await message.answer(
-                    "Не удалось распознать упражнение.\n"
-                    "Скажите: 'добавь [название] [вес] [повторения] [подходы]'"
-                )
-                return
+        # Step 4: Execute CLI command
+        await message.answer(f"Выполняю: {command}")
+        success, output = await execute_cli_command(command)
 
-            try:
-                full_input = f"{exercise_name} {params}"
-                exercise = parse_add_input(full_input)
-                exercise_id = db.add_exercise(exercise)
-                await message.answer(
-                    f"Записал (ID: {exercise_id}):\n{exercise}"
-                )
-            except ValueError as e:
-                await message.answer(f"Ошибка: {e}")
-
-        elif command == "today":
-            exercises = db.get_today_exercises()
-
-            if not exercises:
-                await message.answer("Сегодня тренировок пока не было.")
-                return
-
-            lines = ["Сегодня:"]
-            for i, ex in enumerate(exercises, 1):
-                lines.append(f"{i}. {ex.name}: {ex.weight}кг {ex.reps}x{ex.sets}")
-
-            await message.answer("\n".join(lines))
-
-        elif command == "max":
-            exercise_name = parsed.get("exercise_name", "")
-
-            if not exercise_name:
-                await message.answer("Какое упражнение? Скажите: 'максимум на [название]'")
-                return
-
-            result = db.get_max_weight(exercise_name)
-
-            if result is None:
-                await message.answer(f"Упражнение '{exercise_name}' не найдено.")
-                return
-
-            weight, date = result
-            date_str = date.strftime("%d.%m.%Y")
-            await message.answer(f"Максимум {exercise_name}: {weight}кг ({date_str})")
-
-        elif command == "last":
-            exercise_name = parsed.get("exercise_name", "")
-
-            if not exercise_name:
-                await message.answer("Какое упражнение? Скажите: 'когда делал [название]'")
-                return
-
-            exercise = db.get_last_exercise(exercise_name)
-
-            if exercise is None:
-                await message.answer(f"Упражнение '{exercise_name}' не найдено.")
-                return
-
-            date_str = exercise.created_at.strftime("%d.%m.%Y")
-            await message.answer(
-                f"Последний раз {exercise.name}: {date_str}\n"
-                f"{exercise.weight}кг {exercise.reps}x{exercise.sets}"
-            )
-
+        # Step 5: Send result to user
+        if success:
+            await message.answer(output)
         else:
-            await message.answer(
-                "Не понял команду. Попробуйте:\n"
-                "- 'добавь жим 80 кило 8 на 3'\n"
-                "- 'что я сегодня делал'\n"
-                "- 'максимум на жиме'\n"
-                "- 'когда делал становую'"
-            )
+            await message.answer(f"Ошибка: {output}")
 
     except Exception as e:
         await message.answer(f"Ошибка обработки голоса: {e}")
