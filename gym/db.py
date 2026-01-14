@@ -331,17 +331,18 @@ class Database:
             raise ValueError("Количество дней должно быть положительным")
 
         start_date = datetime.now() - timedelta(days=days)
+        normalized_name = normalize_exercise_name(exercise_name)
 
         with self._get_connection() as conn:
             cursor = conn.execute(
                 """
                 SELECT id, name, weight, reps, sets, note, created_at
                 FROM exercises
-                WHERE LOWER(name) = LOWER(?)
+                WHERE LOWER(REPLACE(name, 'ё', 'е')) = ?
                   AND created_at >= ?
                 ORDER BY created_at ASC
                 """,
-                (exercise_name.strip(), start_date)
+                (normalized_name, start_date)
             )
             return [self._row_to_exercise(row) for row in cursor.fetchall()]
 
