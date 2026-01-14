@@ -1,106 +1,84 @@
-"""Step definitions для голосового ввода через Telegram бот."""
+"""Step definitions для голосового ввода с LLM."""
 import pytest
 from pytest_bdd import scenarios, given, when, then, parsers
 
-# Загружаем все сценарии из feature файла
+# Загрузка сценариев
 scenarios('../features/telegram_voice.feature')
 
 
-# === Предыстория (Background) ===
+# Fixtures для хранения состояния теста
+@pytest.fixture
+def voice_context():
+    """Контекст для хранения данных между шагами."""
+    return {
+        'voice_text': None,
+        'llm_command': None,
+        'cli_result': None,
+        'bot_response': None,
+        'error': None
+    }
 
+
+# Background steps
 @given('пользователь авторизован в Telegram боте')
-def user_authorized():
-    """Пользователь авторизован в Telegram боте."""
-    pytest.skip("Заглушка: авторизация пользователя будет реализована позже")
+def user_authorized(voice_context):
+    """Пользователь авторизован."""
+    voice_context['authorized'] = True
 
 
-@given('включено распознавание голоса')
-def voice_recognition_enabled():
-    """Включено распознавание голоса."""
-    pytest.skip("Заглушка: включение распознавания голоса будет реализовано позже")
+@given('настроен OpenAI API ключ')
+def openai_configured(voice_context):
+    """OpenAI API настроен."""
+    voice_context['openai_configured'] = True
 
 
-# === Сценарий: Добавление упражнения голосом ===
-
-@when(parsers.parse('пользователь отправляет голосовое сообщение "{message}"'))
-def user_sends_voice_message(message):
+# When steps
+@when(parsers.parse('пользователь говорит "{text}"'))
+def user_says(voice_context, text):
     """Пользователь отправляет голосовое сообщение."""
-    pytest.skip(f"Заглушка: отправка голосового сообщения '{message}' будет реализована позже")
+    voice_context['voice_text'] = text
+    # TODO: Вызвать LLM парсер
+    pytest.skip("Реализация LLM парсера будет добавлена")
 
 
-@then(parsers.parse('бот распознаёт название упражнения "{exercise_name}"'))
-def bot_recognizes_exercise_name(exercise_name):
-    """Бот распознаёт название упражнения."""
-    pytest.skip(f"Заглушка: распознавание упражнения '{exercise_name}' будет реализовано позже")
+# Then steps
+@then(parsers.parse("LLM формирует команду '{command}'"))
+def llm_forms_command(voice_context, command):
+    """Проверка что LLM сформировал правильную команду."""
+    # TODO: Проверить результат LLM
+    pytest.skip("Реализация проверки LLM будет добавлена")
 
 
-@then(parsers.parse('бот распознаёт вес "{weight}" килограмм'))
-def bot_recognizes_weight(weight):
-    """Бот распознаёт вес в килограммах."""
-    pytest.skip(f"Заглушка: распознавание веса '{weight}' кг будет реализовано позже")
+@then('CLI выполняется успешно')
+def cli_executes_successfully(voice_context):
+    """CLI команда выполнена успешно."""
+    # TODO: Проверить returncode == 0
+    pytest.skip("Реализация проверки CLI будет добавлена")
 
 
-@then('упражнение сохраняется в базу данных')
-def exercise_saved_to_database():
-    """Упражнение сохраняется в базу данных."""
-    pytest.skip("Заглушка: сохранение упражнения в БД будет реализовано позже")
+@then('бот отвечает подтверждением добавления')
+def bot_confirms_addition(voice_context):
+    """Бот отправил подтверждение."""
+    # TODO: Проверить что ответ содержит "Записал" или подобное
+    pytest.skip("Реализация проверки ответа будет добавлена")
 
 
-@then(parsers.parse('бот отправляет подтверждение "{confirmation}"'))
-def bot_sends_confirmation(confirmation):
-    """Бот отправляет подтверждение."""
-    pytest.skip(f"Заглушка: отправка подтверждения '{confirmation}' будет реализована позже")
+@then('бот отправляет результат выполнения')
+def bot_sends_result(voice_context):
+    """Бот отправил результат CLI."""
+    # TODO: Проверить что stdout передан пользователю
+    pytest.skip("Реализация проверки результата будет добавлена")
 
 
-# === Сценарий: Запрос статистики голосом ===
-
-@given('пользователь сегодня добавил упражнения')
-def user_added_exercises_today():
-    """Пользователь сегодня добавил упражнения."""
-    pytest.skip("Заглушка: добавление упражнений сегодня будет реализовано позже")
-
-
-@then('бот распознаёт запрос статистики за сегодня')
-def bot_recognizes_today_stats_request():
-    """Бот распознаёт запрос статистики за сегодня."""
-    pytest.skip("Заглушка: распознавание запроса статистики будет реализовано позже")
+@then('LLM возвращает сообщение об ошибке')
+def llm_returns_error(voice_context):
+    """LLM вернул ошибку вместо команды."""
+    # TODO: Проверить что error != None
+    pytest.skip("Реализация проверки ошибки будет добавлена")
 
 
-@then('бот отправляет список упражнений за сегодня')
-def bot_sends_today_exercises_list():
-    """Бот отправляет список упражнений за сегодня."""
-    pytest.skip("Заглушка: отправка списка упражнений будет реализована позже")
-
-
-# === Сценарий: Запрос максимума голосом ===
-
-@given('пользователь имеет историю упражнений')
-def user_has_exercise_history():
-    """Пользователь имеет историю упражнений."""
-    pytest.skip("Заглушка: создание истории упражнений будет реализовано позже")
-
-
-@then('бот распознаёт запрос максимума')
-def bot_recognizes_max_request():
-    """Бот распознаёт запрос максимума."""
-    pytest.skip("Заглушка: распознавание запроса максимума будет реализовано позже")
-
-
-@then(parsers.parse('бот отправляет максимальный вес для упражнения "{exercise_name}"'))
-def bot_sends_max_weight(exercise_name):
-    """Бот отправляет максимальный вес для упражнения."""
-    pytest.skip(f"Заглушка: отправка максимального веса для '{exercise_name}' будет реализована позже")
-
-
-# === Структура сценария: Преобразование чисел прописью в цифры ===
-
-@when(parsers.parse('бот получает число прописью "{number_word}"'))
-def bot_receives_number_word(number_word):
-    """Бот получает число прописью."""
-    pytest.skip(f"Заглушка: получение числа прописью '{number_word}' будет реализовано позже")
-
-
-@then(parsers.parse('бот преобразует его в "{number_digit}"'))
-def bot_converts_to_digit(number_digit):
-    """Бот преобразует число прописью в цифры."""
-    pytest.skip(f"Заглушка: преобразование в '{number_digit}' будет реализовано позже")
+@then(parsers.parse('бот отвечает "{message}"'))
+def bot_responds_with_message(voice_context, message):
+    """Бот отправил конкретное сообщение."""
+    # TODO: Проверить текст ответа
+    pytest.skip("Реализация проверки сообщения будет добавлена")
